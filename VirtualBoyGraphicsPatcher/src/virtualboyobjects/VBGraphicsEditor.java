@@ -1,8 +1,18 @@
 package virtualboyobjects;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 
 public class VBGraphicsEditor extends javax.swing.JFrame {
 
@@ -11,40 +21,51 @@ public class VBGraphicsEditor extends javax.swing.JFrame {
 	 */
 	private static final long serialVersionUID = 1L;
 	private VBRom _myRom;
-	private BufferedImage[] allImages = new BufferedImage[128];
+	private BufferedImage[] allImages;
+	private JPanel panel;
+	private JScrollPane scroll;
 
 	/**
+import java.nio.ByteOrder;
 	 * @param args
 	 * @throws IOException 
 	 */
 	public VBGraphicsEditor(){
-		this.setVisible(true);
-		this.setSize(800, 600);
-		init();
+		init();	
 	}
 	
 	public static void main(String[] args) throws IOException {
 		VBGraphicsEditor editor = new VBGraphicsEditor();
+		editor.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
 	
-	private void init(){		
+	private void init(){
+		this.setLayout(new BorderLayout());
+		this.setBounds(this.getX(), this.getY(), 800, 600);
+		panel = new JPanel();
+		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+		scroll = new JScrollPane(panel);
+		scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+		//_myRom = new VBRom("/home/greg/VirtualBoy/VBProgrammingDemo/demo.VB");
 		_myRom = new VBRom("/home/greg/VirtualBoy/VBProgrammingDemo/ss.vb");
 		loadCharacters();
+		this.add(scroll, BorderLayout.WEST);
+		this.setVisible(true);
 	}
 	
 	private void loadCharacters(){
 		//Get all the bytes for characters
 		byte[] bytes = _myRom.getAllCharacters();
+		allImages = new BufferedImage[(bytes.length/16)];
 		
-		int startx = 30;
-		int starty = 30;
-		for(int image=0; image<128; image++){
+		int scale = 4;
+		for(int image=0; image<(bytes.length/16); image++){
 			int x=0;
 			int y=0;
-			allImages[image] = new BufferedImage(8,8,BufferedImage.TYPE_INT_RGB);
+			allImages[image] = new BufferedImage(8*scale,8*scale,BufferedImage.TYPE_INT_RGB);
 			for(int b=(16*image); b<(16*image+16); b++){
 				if(b>(16*image) && b%2==0) {
-					y++;
+					y+=scale;
 					x=0;
 				}
 				int cell1 = (bytes[b]>>6); 
@@ -52,20 +73,42 @@ public class VBGraphicsEditor extends javax.swing.JFrame {
 				int cell3 = (bytes[b]>>2 & 0x03);
 				int cell4 = (bytes[b] & 0x03);
 				
-				allImages[image].setRGB(x, y, setColor(cell1).getRGB());
-				allImages[image].setRGB(++x, y, setColor(cell2).getRGB());
-				allImages[image].setRGB(++x, y, setColor(cell3).getRGB());
-				allImages[image].setRGB(++x, y, setColor(cell4).getRGB());	
-	
-				x++;
+				for(int loop=0; loop<scale; loop++){
+					for(int loopy=0; loopy<scale;loopy++){
+						allImages[image].setRGB(x+loop, y+loopy, setColor(cell1).getRGB());
+					}
+				}
+				x+=scale;
+				for(int loop=0; loop<scale; loop++){
+					for(int loopy=0; loopy<scale;loopy++){
+						allImages[image].setRGB(x+loop, y+loopy, setColor(cell2).getRGB());
+					}
+				}
+				x+=scale;
+				for(int loop=0; loop<scale; loop++){
+					for(int loopy=0; loopy<scale;loopy++){
+						allImages[image].setRGB(x+loop, y+loopy, setColor(cell3).getRGB());
+					}
+				}
+				x+=scale;
+				for(int loop=0; loop<scale; loop++){
+					for(int loopy=0; loopy<scale;loopy++){
+						allImages[image].setRGB(x+loop, y+loopy, setColor(cell4).getRGB());
+					}
+				}
+				x+=scale;
 			}
-			this.getGraphics().drawImage(allImages[image], startx, starty, null);
-			startx += allImages[image].getWidth() + 2;
-			if (image > 1 && image % 20 == 0){
-				starty += allImages[image].getHeight() + 2;
-				startx = 30;
-			}
-		}		
+			
+			javax.swing.JButton b = new javax.swing.JButton();
+			b.setSize(8*scale, 8*scale);
+			b.setBorderPainted(false);
+			b.setContentAreaFilled(false);
+			b.setBounds(b.getX(), b.getY(), 8*scale, 8*scale);
+			b.setIcon(new ImageIcon(allImages[image]));
+			b.setVisible(true);
+			//this.getGraphics().drawImage(allImages[image], startx, starty, null);
+			panel.add(b);
+		}
 	}
 	
 	private Color setColor(int i){
@@ -76,5 +119,4 @@ public class VBGraphicsEditor extends javax.swing.JFrame {
 		
 		return c;
 	}
-
 }

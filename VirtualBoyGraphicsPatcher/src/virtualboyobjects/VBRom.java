@@ -1,13 +1,12 @@
 package virtualboyobjects;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 public class VBRom {
 	
 	private ByteBuffer _rom; //8bit characters
 	private String _path;
-	private boolean _bEndianFlip = true;
+	private boolean _bEndianFlip = false;
 	
 	public VBRom(String path){
 		_path = path;
@@ -30,13 +29,57 @@ public class VBRom {
 	}
 	
 	public byte[] getAllCharacters(){
-		//Return all the character bytes for the addresses of 0x00078000 - 0x0007FFFF
+		//Return all the character bytes for the addresses of
+		//6000 - 7FFF = 0-511
+		//E000 - FFFF = 512-1023
+		//16000 - 17FFF = 1024 - 1535
+		//1E000 = 1FFFF = 1536 - 2047
 		//Switch word bytes around for little endian to big endian conversion
-		byte[] allChars = new byte[0x7FF + 1];
-		for(int i=0x0; i<= 0x7FF; i+=2){
+		byte[] allChars = new byte[(0x7FFF-0x6000)+(0xFFFF-0xE000)+(0x17FFF-0x16000)+(0x1FFFF-0x1E000) + 4];
+		
+		int iLength = (0x7FFF-0x6000);
+		int i=0;
+		//Segment 1
+		for(; i<= iLength; i+=2){
 			if(_bEndianFlip){
-				allChars[i] = _rom.get(0x0007800+i+1);
-				allChars[i+1] = _rom.get(0x0007800+i);
+				allChars[i] = _rom.get(0x6000+i+1);
+				allChars[i+1] = _rom.get(0x6000+i);
+			}else {
+				allChars[i] = _rom.get(0x6000+i);
+				allChars[i+1] = _rom.get(0x6000+i+1);
+			}
+		}
+		//Segment 2
+		iLength += (0xFFFF-0xE000);
+		for(; i<= iLength; i+=2){
+			if(_bEndianFlip){
+				allChars[i] = _rom.get(0xE000+i+1);
+				allChars[i+1] = _rom.get(0xE000+i);
+			}else {
+				allChars[i] = _rom.get(0xE000+i);
+				allChars[i+1] = _rom.get(0xE000+i+1);
+			}
+		}
+		//Segment 3
+		iLength += (0x17FFF-0x16000);
+		for(; i<= iLength; i+=2){
+			if(_bEndianFlip){
+				allChars[i] = _rom.get(0x16000+i+1);
+				allChars[i+1] = _rom.get(0x16000+i);
+			}else {
+				allChars[i] = _rom.get(0x16000+i);
+				allChars[i+1] = _rom.get(0x16000+i+1);
+			}
+		}
+		//Segment 4
+		iLength += (0x1FFFF-0x1E000);
+		for(; i<= iLength; i+=2){
+			if(_bEndianFlip){
+				allChars[i] = _rom.get(0x1E000+i+1);
+				allChars[i+1] = _rom.get(0x1E000+i);
+			}else {
+				allChars[i] = _rom.get(0x1E000+i);
+				allChars[i+1] = _rom.get(0x1E000+i+1);
 			}
 		}
 		
