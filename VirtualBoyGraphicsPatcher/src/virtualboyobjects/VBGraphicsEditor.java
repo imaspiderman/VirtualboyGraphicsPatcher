@@ -2,6 +2,7 @@ package virtualboyobjects;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.image.BufferedImage;
@@ -32,6 +33,9 @@ import java.nio.ByteOrder;
 	 */
 	public VBGraphicsEditor(){
 		init();	
+		loadCharacters();
+		this.add(scroll, BorderLayout.WEST);
+		this.setVisible(true);
 	}
 	
 	public static void main(String[] args) throws IOException {
@@ -46,11 +50,8 @@ import java.nio.ByteOrder;
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 		scroll = new JScrollPane(panel);
 		scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-		//_myRom = new VBRom("/home/greg/VirtualBoy/VBProgrammingDemo/demo.VB");
-		_myRom = new VBRom("/home/greg/VirtualBoy/VBProgrammingDemo/ss.vb");
-		loadCharacters();
-		this.add(scroll, BorderLayout.WEST);
-		this.setVisible(true);
+		_myRom = new VBRom("/home/greg/VirtualBoy/VBProgrammingDemo/Tetris.vb");
+		//_myRom = new VBRom("/home/greg/VirtualBoy/VBProgrammingDemo/ss.vb");		
 	}
 	
 	private void loadCharacters(){
@@ -58,7 +59,7 @@ import java.nio.ByteOrder;
 		byte[] bytes = _myRom.getAllCharacters();
 		allImages = new BufferedImage[(bytes.length/16)];
 		
-		int scale = 4;
+		int scale = 2;
 		for(int image=0; image<(bytes.length/16); image++){
 			int x=0;
 			int y=0;
@@ -99,12 +100,12 @@ import java.nio.ByteOrder;
 				x+=scale;
 			}
 			
-			javax.swing.JButton b = new javax.swing.JButton();
-			b.setSize(8*scale, 8*scale);
+			javax.swing.JButton b = new javax.swing.JButton();			
 			b.setBorderPainted(false);
 			b.setContentAreaFilled(false);
 			b.setBounds(b.getX(), b.getY(), 8*scale, 8*scale);
 			b.setIcon(new ImageIcon(allImages[image]));
+			b.setSize(8*scale, 8*scale);
 			b.setVisible(true);
 			//this.getGraphics().drawImage(allImages[image], startx, starty, null);
 			panel.add(b);

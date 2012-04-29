@@ -1,81 +1,76 @@
 package virtualboyobjects;
 
-public class VBCharacter extends javax.swing.JFrame {
+import java.awt.Color;
+import java.awt.image.BufferedImage;
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	private byte[] _character = new byte[2048];//Should contain 2048 bytes
+import javax.swing.ImageIcon;
+
+public class VBCharacter {
+
+	private int _length;
+	byte[] _bytes;
+	int _startAddress;
+	int _endAddress;
+	int _imageScale = 1;
 	
-	private int[] _cell = new int[64*128];//Represents all cells of bits
-	private int _cellStartX = 30;
-	private int _cellStartY = 30;
-	
-	public VBCharacter(byte[] charIn) throws Exception{
-		this.setVisible(true);
-		this.setSize(640, 480);
-		if(charIn.length != 2048){throw new Exception("Character is not 16*2048 Bytes!");}
-		this._character = charIn;
-		processCharacter();
+	public VBCharacter(int startAddress, int endAddress, VBRom romIn) throws Exception{
+		_length = endAddress - startAddress;
+		_startAddress = startAddress;
+		_endAddress = endAddress;
+		romIn.getRomByteBuffer().get(_bytes, _startAddress, _length);
 	}
 	
-	private void processCharacter(){
-		//Lets try 8-bit little Endian first
-		//1  2  3  4  5  6  7  8  <--cells
-		//01 01 01 01 11 11 11 11 --2 bits per cell
-		int j=0;
-		for(int i=0; i<64; i++)
-		{			
-			//First cell
-			_cell[i] = 0;
-			if((_character[j] & 0x40) != 0 ){
-				_cell[i] = 1;
-			}
-			if((_character[j] & 0x80) != 0){
-				_cell[i] = 2;
-			}
-			if((_character[j] & 0xC0) == 0xC0){
-				_cell[i] = 3;
-			}
-			//Second cell
-			_cell[++i] = 0;
-			if((_character[j] & 0x10) != 0 ){
-				_cell[i] = 1;
-			}
-			if((_character[j] & 0x20) != 0){
-				_cell[i] = 2;
-			}
-			if((_character[j] & 0x30) == 0x30){
-				_cell[i] = 3;
+	public ImageIcon getImage(){
+		int _imagex = 0;
+		int _imagey = 0;
+		BufferedImage i = new BufferedImage(8*_imageScale,8*_imageScale,BufferedImage.TYPE_INT_RGB);
+		for(int x=0; x<_length; x++){
+			int cell1 = (_bytes[x]>>6); 
+			int cell2 = (_bytes[x]>>4 & 0x03);
+			int cell3 = (_bytes[x]>>2 & 0x03);
+			int cell4 = (_bytes[x] & 0x03);
+			
+			if(x>1 && x%2==0){
+				_imagex = 0;
+				_imagey += _imageScale;
 			}
 			
-			//Third cell
-			_cell[++i] = 0;
-			if((_character[j] & 0x04) != 0 ){
-				_cell[i] = 1;
+			for(int loop=0; loop<_imageScale; loop++){
+				for(int loopy=0; loopy<_imageScale;loopy++){
+					i.setRGB(_imagex+loop, _imagey+loopy, setColor(cell1).getRGB());
+				}
 			}
-			if((_character[j] & 0x08) != 0){
-				_cell[i] = 2;
+			_imagex+=_imageScale;
+			for(int loop=0; loop<_imageScale; loop++){
+				for(int loopy=0; loopy<_imageScale;loopy++){
+					i.setRGB(_imagex+loop, _imagey+loopy, setColor(cell2).getRGB());
+				}
 			}
-			if((_character[j] & 0x0C) == 0x0C){
-				_cell[i] = 3;
+			_imagex+=_imageScale;
+			for(int loop=0; loop<_imageScale; loop++){
+				for(int loopy=0; loopy<_imageScale;loopy++){
+					i.setRGB(_imagex+loop, _imagey+loopy, setColor(cell3).getRGB());
+				}
 			}
-			
-			//Fourth cell
-			_cell[++i] = 0;
-			if((_character[j] & 0x01) != 0 ){
-				_cell[i] = 1;
+			_imagex+=_imageScale;
+			for(int loop=0; loop<_imageScale; loop++){
+				for(int loopy=0; loopy<_imageScale;loopy++){
+					i.setRGB(_imagex+loop, _imagey+loopy, setColor(cell4).getRGB());
+				}
 			}
-			if((_character[j] & 0x02) != 0){
-				_cell[i] = 2;
-			}
-			if((_character[j] & 0x03) == 0x03){
-				_cell[i] = 3;
-			}
-			
-			j++;
-			i++;
+			_imagex+=_imageScale;
 		}
+		
+		return new ImageIcon(i);
 	}
+	
+	private Color setColor(int i){
+		Color c = Color.BLACK;
+		if(i == 3) c = new Color(255,0,0);
+		if(i == 2) c = new Color(150,0,0);
+		if(i == 1) c = new Color(75,0,0);
+		
+		return c;
+	}
+	
 }

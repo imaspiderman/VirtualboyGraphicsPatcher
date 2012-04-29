@@ -6,7 +6,7 @@ public class VBRom {
 	
 	private ByteBuffer _rom; //8bit characters
 	private String _path;
-	private boolean _bEndianFlip = false;
+	private boolean _bEndianFlip = true;
 	
 	public VBRom(String path){
 		_path = path;
@@ -28,8 +28,13 @@ public class VBRom {
 		}
 	}
 	
+	public ByteBuffer getRomByteBuffer(){
+		return _rom;
+	}
+	
 	public byte[] getAllCharacters(){
 		//Return all the character bytes for the addresses of
+		//Rom starts ad 0700000
 		//6000 - 7FFF = 0-511
 		//E000 - FFFF = 512-1023
 		//16000 - 17FFF = 1024 - 1535
@@ -87,9 +92,18 @@ public class VBRom {
 	}
 	
 	public byte[] getAllBGMaps(){
-		byte[] allBGMaps = new byte[0x1C000 + 1];
-		for(int i=0x0; i<=0x1C000; i++){
-			allBGMaps[i] = _rom.get(0x00020000+i);
+		//0x0002 0000 - 0x0003 C000 memory area for BGMaps
+		
+		byte[] allBGMaps = new byte[0x3C000-0x20000 + 1];
+		int iLength = (0x3C000-0x20000);
+		for(int i=0x0; i<=iLength; i+=2){
+			if(_bEndianFlip){
+				allBGMaps[i] = _rom.get(0x020000+i+1);
+				allBGMaps[i+1] = _rom.get(0x20000+i);
+			}else {
+				allBGMaps[i] = _rom.get(0x20000+i);
+				allBGMaps[i+1] = _rom.get(0x20000+i+1);
+			}
 		}
 		return allBGMaps;
 	}
