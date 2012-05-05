@@ -2,15 +2,11 @@ package virtualboyobjects;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.GridLayout;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
-import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -50,7 +46,7 @@ import java.nio.ByteOrder;
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 		scroll = new JScrollPane(panel);
 		scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-		_myRom = new VBRom("/home/greg/VirtualBoy/VBProgrammingDemo/Tetris.vb");
+		_myRom = new VBRom("/home/greg/VirtualBoy/RealityBoy/ram_vip.bin");
 		//_myRom = new VBRom("/home/greg/VirtualBoy/VBProgrammingDemo/ss.vb");		
 	}
 	
@@ -59,7 +55,8 @@ import java.nio.ByteOrder;
 		byte[] bytes = _myRom.getAllCharacters();
 		allImages = new BufferedImage[(bytes.length/16)];
 		
-		int scale = 2;
+		int scale = 4;
+		int counter = 0;
 		for(int image=0; image<(bytes.length/16); image++){
 			int x=0;
 			int y=0;
@@ -69,10 +66,10 @@ import java.nio.ByteOrder;
 					y+=scale;
 					x=0;
 				}
-				int cell1 = (bytes[b]>>6); 
-				int cell2 = (bytes[b]>>4 & 0x03);
-				int cell3 = (bytes[b]>>2 & 0x03);
-				int cell4 = (bytes[b] & 0x03);
+				int cell4 = ((char)bytes[b]>>6); 
+				int cell3 = ((char)bytes[b]>>4 & 0x03);
+				int cell2 = ((char)bytes[b]>>2 & 0x03);
+				int cell1 = ((char)bytes[b] & 0x03);
 				
 				for(int loop=0; loop<scale; loop++){
 					for(int loopy=0; loopy<scale;loopy++){
@@ -107,7 +104,8 @@ import java.nio.ByteOrder;
 			b.setIcon(new ImageIcon(allImages[image]));
 			b.setSize(8*scale, 8*scale);
 			b.setVisible(true);
-			//this.getGraphics().drawImage(allImages[image], startx, starty, null);
+			b.setToolTipText(Integer.toString(counter));
+			counter++;
 			panel.add(b);
 		}
 	}

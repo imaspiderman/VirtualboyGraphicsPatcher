@@ -6,7 +6,7 @@ public class VBRom {
 	
 	private ByteBuffer _rom; //8bit characters
 	private String _path;
-	private boolean _bEndianFlip = true;
+	private boolean _bEndianFlip = false;
 	
 	public VBRom(String path){
 		_path = path;
@@ -16,9 +16,10 @@ public class VBRom {
 	private void LoadRomToMemory(){
 		java.io.File f = new java.io.File(_path);
 		_rom = ByteBuffer.allocate((int)f.length());
+		_rom.order(java.nio.ByteOrder.LITTLE_ENDIAN);
 		try {
-			java.io.DataInputStream file = new java.io.DataInputStream(new java.io.FileInputStream(_path));			
-			for(int b=0; b<(int)f.length(); b+=2){
+			java.io.DataInputStream file = new java.io.DataInputStream(new java.io.FileInputStream(_path));
+			for(int b=0; b<(int)f.length(); b++){
 				_rom.put(file.readByte());
 			}
 			
