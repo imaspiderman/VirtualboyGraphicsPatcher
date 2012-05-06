@@ -55,7 +55,7 @@ import java.nio.ByteOrder;
 		byte[] bytes = _myRom.getAllCharacters();
 		allImages = new BufferedImage[(bytes.length/16)];
 		
-		int scale = 4;
+		int scale = 2;
 		int counter = 0;
 		for(int image=0; image<(bytes.length/16); image++){
 			int x=0;
@@ -66,7 +66,7 @@ import java.nio.ByteOrder;
 					y+=scale;
 					x=0;
 				}
-				int cell4 = ((char)bytes[b]>>6); 
+				int cell4 = (bytes[b]<0)?((char)bytes[b] & 0xFF >> 6):((char)bytes[b]>>6); 
 				int cell3 = ((char)bytes[b]>>4 & 0x03);
 				int cell2 = ((char)bytes[b]>>2 & 0x03);
 				int cell1 = ((char)bytes[b] & 0x03);
