@@ -18,9 +18,11 @@ public class VBGraphicsEditor extends javax.swing.JFrame {
 	 */
 	private static final long serialVersionUID = 1L;
 	private VBRom _myRom;
-	private BufferedImage[] allImages;
-	private JPanel panel;
-	private JScrollPane scroll;
+	private BufferedImage allChars;
+	private JPanel leftPanel;
+	private JScrollPane leftScroll;
+	private JScrollPane rightScroll;
+	private JPanel rightPanel;
 
 	/**
 import java.nio.ByteOrder;
@@ -29,8 +31,10 @@ import java.nio.ByteOrder;
 	 */
 	public VBGraphicsEditor(){
 		init();	
+		//loadCharacters();
 		loadCharacters();
-		this.add(scroll, BorderLayout.WEST);
+		this.add(leftScroll, BorderLayout.WEST);
+		this.add(rightScroll, BorderLayout.EAST);
 		this.setVisible(true);
 	}
 	
@@ -42,10 +46,14 @@ import java.nio.ByteOrder;
 	private void init(){
 		this.setLayout(new BorderLayout());
 		this.setBounds(this.getX(), this.getY(), 800, 600);
-		panel = new JPanel();
-		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-		scroll = new JScrollPane(panel);
-		scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+		leftPanel = new JPanel();
+		leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
+		leftScroll = new JScrollPane(leftPanel);
+		leftScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+		rightPanel = new JPanel();
+		rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
+		rightScroll = new JScrollPane(rightPanel);
+		rightScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 		_myRom = new VBRom("/home/greg/VirtualBoy/RealityBoy/ram_vip.bin");
 		//_myRom = new VBRom("/home/greg/VirtualBoy/VBProgrammingDemo/ss.vb");		
 	}
@@ -53,68 +61,69 @@ import java.nio.ByteOrder;
 	private void loadCharacters(){
 		//Get all the bytes for characters
 		byte[] bytes = _myRom.getAllCharacters();
-		allImages = new BufferedImage[(bytes.length/16)];
+		int startx = 0;
+		int starty = 0;
+		int x=0;
+		int y=0;
+		int imageWidth=360;
+		int imageHeight=500;
 		
-		int scale = 2;
-		int counter = 0;
-		for(int image=0; image<(bytes.length/16); image++){
-			int x=0;
-			int y=0;
-			allImages[image] = new BufferedImage(8*scale,8*scale,BufferedImage.TYPE_INT_RGB);
-			for(int b=(16*image); b<(16*image+16); b++){
-				if(b>(16*image) && b%2==0) {
-					y+=scale;
-					x=0;
-				}
-				int cell4 = (bytes[b]<0)?((char)bytes[b] & 0xFF >> 6):((char)bytes[b]>>6); 
-				int cell3 = ((char)bytes[b]>>4 & 0x03);
-				int cell2 = ((char)bytes[b]>>2 & 0x03);
-				int cell1 = ((char)bytes[b] & 0x03);
-				
-				for(int loop=0; loop<scale; loop++){
-					for(int loopy=0; loopy<scale;loopy++){
-						allImages[image].setRGB(x+loop, y+loopy, setColor(cell1).getRGB());
-					}
-				}
-				x+=scale;
-				for(int loop=0; loop<scale; loop++){
-					for(int loopy=0; loopy<scale;loopy++){
-						allImages[image].setRGB(x+loop, y+loopy, setColor(cell2).getRGB());
-					}
-				}
-				x+=scale;
-				for(int loop=0; loop<scale; loop++){
-					for(int loopy=0; loopy<scale;loopy++){
-						allImages[image].setRGB(x+loop, y+loopy, setColor(cell3).getRGB());
-					}
-				}
-				x+=scale;
-				for(int loop=0; loop<scale; loop++){
-					for(int loopy=0; loopy<scale;loopy++){
-						allImages[image].setRGB(x+loop, y+loopy, setColor(cell4).getRGB());
-					}
-				}
-				x+=scale;
+		allChars = new BufferedImage(imageWidth,imageHeight,BufferedImage.TYPE_INT_RGB);
+		
+		//Loop through all the bytes
+		//16 bytes will be a full character of 64 pixels 8x8
+		//We'll show 40 characters across with 1 pixel in between them
+		//We'll put 1 pixel in between the characters vertically as well
+		//There are 2048 characters * 64 pixels = 131072 total pixels
+		int cell1;
+		int cell2;
+		int cell3;
+		int cell4;
+		for(int b=0; b<bytes.length; b++){
+			if(b>0 && b%2==0){ //every 2 bytes we need to move down a row
+				allChars.setRGB(++x, y, (new Color(50,50,50)).getRGB());//border
+				y++;
+				x=startx;
+			}
+			if(b>0 && b%16==0){//every 16 bytes we need to reset y and move start x
+				y = starty;
+				startx += 9; //8 pixels = 1 for space;
+				x=startx;
+			}
+			if(b>0 && b%640==0){//every 640 bytes (40characters * 16bytes/character) we'll increment starty
+				starty += 9;
+				y=starty;
+				startx = 0;
+				x=startx;
 			}
 			
-			javax.swing.JButton b = new javax.swing.JButton();			
-			b.setBorderPainted(false);
-			b.setContentAreaFilled(false);
-			b.setBounds(b.getX(), b.getY(), 8*scale, 8*scale);
-			b.setIcon(new ImageIcon(allImages[image]));
-			b.setSize(8*scale, 8*scale);
-			b.setVisible(true);
-			b.setToolTipText(Integer.toString(counter));
-			counter++;
-			panel.add(b);
+			cell4 = (bytes[b]<0)?((char)bytes[b] & 0xFF >> 6):((char)bytes[b]>>6); 
+			cell3 = ((char)bytes[b]>>4 & 0x03);
+			cell2 = ((char)bytes[b]>>2 & 0x03);
+			cell1 = ((char)bytes[b] & 0x03);
+			
+			allChars.setRGB(x, y, setColor(cell1).getRGB());
+			allChars.setRGB(++x, y, setColor(cell2).getRGB());
+			allChars.setRGB(++x, y, setColor(cell3).getRGB());
+			allChars.setRGB(++x, y, setColor(cell4).getRGB());
 		}
+		
+		javax.swing.JButton b = new javax.swing.JButton();			
+		b.setBorderPainted(false);
+		b.setContentAreaFilled(false);
+		b.setBounds(b.getX(), b.getY(), imageWidth, imageHeight);
+		b.setIcon(new ImageIcon(allChars));
+		b.setSize(imageWidth, imageHeight);
+		b.setVisible(true);
+		
+		leftPanel.add(b);
 	}
 	
 	private Color setColor(int i){
 		Color c = Color.BLACK;
-		if(i == 3) c = new Color(255,0,0);
+		if(i == 3) c = new Color(200,0,0);
 		if(i == 2) c = new Color(150,0,0);
-		if(i == 1) c = new Color(75,0,0);
+		if(i == 1) c = new Color(100,0,0);
 		
 		return c;
 	}
