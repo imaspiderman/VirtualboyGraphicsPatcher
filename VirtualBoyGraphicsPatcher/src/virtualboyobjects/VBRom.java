@@ -1,5 +1,6 @@
 package virtualboyobjects;
 
+import java.awt.Color;
 import java.nio.ByteBuffer;
 
 public class VBRom {
@@ -107,5 +108,90 @@ public class VBRom {
 			}
 		}
 		return allBGMaps;
+	}
+	
+	public java.awt.image.BufferedImage getCharacterAt(int offset,int scale){
+		int segment = (int)Math.floor((offset+1)/512);
+		int imageWidth = 8*scale;
+		int imageHeight = 8*scale;
+		int iCharSize = 16; //16 bytes per char
+		int segment1 = 0x6000;//Starting address for seg 1
+		int segment2 = 0xE000;//Starting address for seg 2
+		int segment3 = 0x16000;//Starting address for seg 3
+		int segment4 = 0x1E000;//Starting address for seg 4
+		int currsegment = 0;
+		
+		switch(segment){
+			case 1: currsegment = segment1; break;
+			case 2: currsegment = segment2; break;
+			case 3: currsegment = segment3; break;
+			case 4: currsegment = segment4; break;
+			default: currsegment = segment1; break;
+		}
+		
+		java.awt.image.BufferedImage i  = 
+				new java.awt.image.BufferedImage(
+						imageWidth, 
+						imageHeight, 
+						java.awt.image.BufferedImage.TYPE_INT_RGB
+						);
+		
+		_rom.position(currsegment + (offset*iCharSize));//Set the position
+		byte[] pixels = new byte[16];//Set a byte array
+		_rom.get(pixels);//Fill the array
+		
+		//Make the image
+		int cell1;
+		int cell2;
+		int cell3;
+		int cell4;
+		int x=0;
+		int y=0;
+		
+		for(int b=0; b<pixels.length; b++){
+			if(b>0 && b%2==0){ //every 2 bytes we need to move down a row
+				y+=scale;
+				x=0;
+			}
+			
+			cell4 = (pixels[b]<0)?((char)pixels[b] & 0xFF >> 6):((char)pixels[b]>>6); 
+			cell3 = ((char)pixels[b]>>4 & 0x03);
+			cell2 = ((char)pixels[b]>>2 & 0x03);
+			cell1 = ((char)pixels[b] & 0x03);
+	
+			for(int xs=0; xs<scale; xs++){
+				for(int ys=0; ys<scale; ys++){
+					i.setRGB(x+xs, y+ys, setColor(cell1).getRGB());
+				}
+			}
+			x+=scale;
+			for(int xs=0; xs<scale; xs++){
+				for(int ys=0; ys<scale; ys++){
+					i.setRGB(x+xs, y+ys, setColor(cell2).getRGB());
+				}
+			}
+			x+=scale;
+			for(int xs=0; xs<scale; xs++){
+				for(int ys=0; ys<scale; ys++){
+					i.setRGB(x+xs, y+ys, setColor(cell3).getRGB());
+				}
+			}
+			x+=scale;
+			for(int xs=0; xs<scale; xs++){
+				for(int ys=0; ys<scale; ys++){
+					i.setRGB(x+xs, y+ys, setColor(cell4).getRGB());
+				}
+			}
+		}
+		return i;
+	}
+	
+	private Color setColor(int i){
+		Color c = Color.BLACK;
+		if(i == 3) c = new Color(125,125,125);
+		if(i == 2) c = new Color(100,100,100);
+		if(i == 1) c = new Color(75,75,75);
+		
+		return c;
 	}
 }
