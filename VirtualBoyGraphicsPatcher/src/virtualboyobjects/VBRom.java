@@ -9,6 +9,7 @@ public class VBRom {
 	private String _path;
 	private byte[] allChars = new byte[32768]; //2048chars * 16px
 	private byte[] allBGMaps = new byte[114688]; //14maps * 2bytes per char * 4096chars per map
+	private java.awt.Polygon[] bgMapPolys = new java.awt.Polygon[4096];
 	private boolean _bEndianFlip = true;
 	
 	public VBRom(String path){
@@ -91,6 +92,7 @@ public class VBRom {
 		int cell;
 		int mainX = 0;
 		int mainY = 0;
+		int polyidx = 0;
 		
 		try{
 			for(int m=0; m<iBGMapLength; m+=2){
@@ -104,8 +106,19 @@ public class VBRom {
 						i.setRGB(mainX+x, mainY+y, bi.getRGB(x, y));
 					}
 				}
-				mainX += bi.getWidth();
+				//Draw square
+				java.awt.Polygon p = new java.awt.Polygon();
+				p.addPoint(mainX, mainY);
+				p.addPoint(mainX + bi.getWidth(), mainY);
+				p.addPoint(mainX + bi.getWidth(), mainY + bi.getHeight());
+				p.addPoint(mainX, mainY + bi.getHeight());
+				p.addPoint(mainX, mainY);
 				
+				i.getGraphics().drawPolygon(p);
+				this.bgMapPolys[polyidx] = p;
+				polyidx++;
+				
+				mainX += bi.getWidth();
 				if((m+2)%128 == 0){
 					mainY += bi.getHeight();
 					mainX = 0;
