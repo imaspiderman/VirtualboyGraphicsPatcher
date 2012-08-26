@@ -7,17 +7,20 @@ public class VBRom {
 	
 	private ByteBuffer _rom; //8bit characters
 	private String _path;
-	private boolean _bEndianFlip = false;
+	private byte[] allChars = new byte[32768]; //2048chars * 16px
+	private byte[] allBGMaps = new byte[114688]; //14maps * 2bytes per char * 4096chars per map
+	private boolean _bEndianFlip = true;
 	
 	public VBRom(String path){
 		_path = path;
 		LoadRomToMemory();
+		getAllCharacters();
+		getAllBGMaps();
 	}
 	
 	private void LoadRomToMemory(){
 		java.io.File f = new java.io.File(_path);
 		_rom = ByteBuffer.allocate((int)f.length());
-		_rom.order(java.nio.ByteOrder.LITTLE_ENDIAN);
 		try {
 			java.io.DataInputStream file = new java.io.DataInputStream(new java.io.FileInputStream(_path));
 			for(int b=0; b<(int)f.length(); b++){
@@ -34,117 +37,110 @@ public class VBRom {
 		return _rom;
 	}
 	
-	public byte[] getAllCharacters(){
+	private void getAllCharacters(){
 		//Return all the character bytes for the addresses of
 		//Rom starts ad 0700000
 		//6000 - 7FFF = 0-511
 		//E000 - FFFF = 512-1023
 		//16000 - 17FFF = 1024 - 1535
 		//1E000 = 1FFFF = 1536 - 2047
-		//Switch word bytes around for little endian to big endian conversion
-		byte[] allChars = new byte[(0x7FFF-0x6000)+(0xFFFF-0xE000)+(0x17FFF-0x16000)+(0x1FFFF-0x1E000) + 4];
-		
-		int iLength = (0x7FFF-0x6000);
-		int i=0;
+		//Switch word bytes around for little endian to big endian conversion				
+		int iLength = 0x1FFF;
 		//Segment 1
-		for(; i<= iLength; i+=2){
-			if(_bEndianFlip){
-				allChars[i] = _rom.get(0x6000+i+1);
-				allChars[i+1] = _rom.get(0x6000+i);
-			}else {
-				allChars[i] = _rom.get(0x6000+i);
-				allChars[i+1] = _rom.get(0x6000+i+1);
-			}
+		for(int i=0; i<= iLength; i++){
+			allChars[i] = _rom.get(0x6000+i);
 		}
 		//Segment 2
-		iLength += (0xFFFF-0xE000);
-		for(; i<= iLength; i+=2){
-			if(_bEndianFlip){
-				allChars[i] = _rom.get(0xE000+i+1);
-				allChars[i+1] = _rom.get(0xE000+i);
-			}else {
-				allChars[i] = _rom.get(0xE000+i);
-				allChars[i+1] = _rom.get(0xE000+i+1);
-			}
+		for(int i=0; i<= iLength; i++){
+			allChars[i+iLength+1] = _rom.get(0xE000+i);
 		}
 		//Segment 3
-		iLength += (0x17FFF-0x16000);
-		for(; i<= iLength; i+=2){
-			if(_bEndianFlip){
-				allChars[i] = _rom.get(0x16000+i+1);
-				allChars[i+1] = _rom.get(0x16000+i);
-			}else {
-				allChars[i] = _rom.get(0x16000+i);
-				allChars[i+1] = _rom.get(0x16000+i+1);
-			}
+		for(int i=0; i<= iLength; i++){
+			allChars[i+((iLength+1)*2)] = _rom.get(0x16000+i);
 		}
 		//Segment 4
-		iLength += (0x1FFFF-0x1E000);
-		for(; i<= iLength; i+=2){
-			if(_bEndianFlip){
-				allChars[i] = _rom.get(0x1E000+i+1);
-				allChars[i+1] = _rom.get(0x1E000+i);
-			}else {
-				allChars[i] = _rom.get(0x1E000+i);
-				allChars[i+1] = _rom.get(0x1E000+i+1);
-			}
+		for(int i=0; i<= iLength; i++){
+			allChars[i+((iLength+1)*3)] = _rom.get(0x1E000+i);
 		}
-		
-		return allChars;
 	}
 	
-	public byte[] getAllBGMaps(){
-		//0x0002 0000 - 0x0003 C000 memory area for BGMaps
-		
-		byte[] allBGMaps = new byte[0x3C000-0x20000 + 1];
+	private void getAllBGMaps(){
+		//0x0002 0000 - 0x0003 C000 memory area for BGMaps		
 		int iLength = (0x3C000-0x20000);
-		for(int i=0x0; i<=iLength; i+=2){
-			if(_bEndianFlip){
-				allBGMaps[i] = _rom.get(0x020000+i+1);
-				allBGMaps[i+1] = _rom.get(0x20000+i);
-			}else {
-				allBGMaps[i] = _rom.get(0x20000+i);
-				allBGMaps[i+1] = _rom.get(0x20000+i+1);
-			}
+		for(int i=0x0; i<iLength; i++){
+			allBGMaps[i] = _rom.get(0x20000+i);
 		}
-		return allBGMaps;
 	}
 	
-	public java.awt.image.BufferedImage getCharacterAt(int offset,int scale){
-		int segment = (int)Math.floor((offset+1)/512);
-		int imageWidth = 8*scale;
-		int imageHeight = 8*scale;
-		int iCharSize = 16; //16 bytes per char
-		int segment1 = 0x6000;//Starting address for seg 1
-		int segment2 = 0xE000;//Starting address for seg 2
-		int segment3 = 0x16000;//Starting address for seg 3
-		int segment4 = 0x1E000;//Starting address for seg 4
-		int currsegment = 0;
-		
-		switch(segment){
-			case 1: currsegment = segment1; break;
-			case 2: currsegment = segment2; break;
-			case 3: currsegment = segment3; break;
-			case 4: currsegment = segment4; break;
-			default: currsegment = segment1; break;
-		}
-		
+	public java.awt.image.BufferedImage getBGMap(int bgMapNumber,int scale){
+		//64x64 chars on a map
+		int imageWidth = 512*scale;
+		int imageHeight = 512*scale;
+		int iBGMapLength = 8192;
 		java.awt.image.BufferedImage i  = 
 				new java.awt.image.BufferedImage(
 						imageWidth, 
 						imageHeight, 
 						java.awt.image.BufferedImage.TYPE_INT_RGB
 						);
+		byte[] bgMap = new byte[iBGMapLength];
+		for(int m=0; m<iBGMapLength; m++){
+			bgMap[m] = allBGMaps[(bgMapNumber*iBGMapLength)+m];
+		}
 		
-		_rom.position(currsegment + (offset*iCharSize));//Set the position
+		int cell;
+		int mainX = 0;
+		int mainY = 0;
+		
+		try{
+			for(int m=0; m<iBGMapLength; m+=2){
+				short b1 = (short)(bgMap[m] & 0xFF);
+				short b2 = (short)(bgMap[m+1] & 0xFF);
+				cell = ((b2 << 8) + b1) & 0x7FF;
+				
+				java.awt.image.BufferedImage bi = getCharacter(cell,1);
+				for(int x=0; x<bi.getWidth();x++){
+					for(int y=0; y<bi.getHeight();y++){
+						i.setRGB(mainX+x, mainY+y, bi.getRGB(x, y));
+					}
+				}
+				mainX += bi.getWidth();
+				
+				if((m+2)%128 == 0){
+					mainY += bi.getHeight();
+					mainX = 0;
+				}
+			}
+		}catch(Exception ex){
+			ex.printStackTrace();
+		}
+		
+		return i;
+	}
+	
+	public java.awt.image.BufferedImage getCharacter(int charNumber,int scale){
+		int imageWidth = 8*scale;
+		int imageHeight = 8*scale;
+		java.awt.image.BufferedImage i  = 
+				new java.awt.image.BufferedImage(
+						imageWidth, 
+						imageHeight, 
+						java.awt.image.BufferedImage.TYPE_INT_RGB
+						);
+
 		byte[] pixels = new byte[16];//Set a byte array
-		_rom.get(pixels);//Fill the array
+		int charOffset = charNumber*16;
+		
+		//Load the 16 byte character
+		for(int x=0; x<16; x++){
+			pixels[x] = allChars[charOffset+x];
+		}
 		
 		//Make the image
-		int cell1;
-		int cell2;
-		int cell3;
-		int cell4;
+		int pix1;
+		int pix2;
+		int pix3;
+		int pix4;
 		int x=0;
 		int y=0;
 		
@@ -154,42 +150,43 @@ public class VBRom {
 				x=0;
 			}
 			
-			cell4 = (pixels[b]<0)?((char)pixels[b] & 0xFF >> 6):((char)pixels[b]>>6); 
-			cell3 = ((char)pixels[b]>>4 & 0x03);
-			cell2 = ((char)pixels[b]>>2 & 0x03);
-			cell1 = ((char)pixels[b] & 0x03);
+			pix4 = (pixels[b]<0)?(pixels[b] >> 6 & 3 | 2):(pixels[b] >> 6);
+			pix3 = pixels[b] >> 4 & 3;
+			pix2 = pixels[b] >> 2 & 3;
+			pix1 = pixels[b] & 3;
 	
 			for(int xs=0; xs<scale; xs++){
 				for(int ys=0; ys<scale; ys++){
-					i.setRGB(x+xs, y+ys, setColor(cell1).getRGB());
+					i.setRGB(x+xs, y+ys, setColor(pix1).getRGB());
 				}
 			}
 			x+=scale;
 			for(int xs=0; xs<scale; xs++){
 				for(int ys=0; ys<scale; ys++){
-					i.setRGB(x+xs, y+ys, setColor(cell2).getRGB());
+					i.setRGB(x+xs, y+ys, setColor(pix2).getRGB());
 				}
 			}
 			x+=scale;
 			for(int xs=0; xs<scale; xs++){
 				for(int ys=0; ys<scale; ys++){
-					i.setRGB(x+xs, y+ys, setColor(cell3).getRGB());
+					i.setRGB(x+xs, y+ys, setColor(pix3).getRGB());
 				}
 			}
 			x+=scale;
 			for(int xs=0; xs<scale; xs++){
 				for(int ys=0; ys<scale; ys++){
-					i.setRGB(x+xs, y+ys, setColor(cell4).getRGB());
+					i.setRGB(x+xs, y+ys, setColor(pix4).getRGB());
 				}
 			}
+			x+=scale;
 		}
 		return i;
 	}
 	
 	private Color setColor(int i){
 		Color c = Color.BLACK;
-		if(i == 3) c = new Color(125,125,125);
-		if(i == 2) c = new Color(100,100,100);
+		if(i == 3) c = new Color(200,200,200);
+		if(i == 2) c = new Color(125,125,125);
 		if(i == 1) c = new Color(75,75,75);
 		
 		return c;

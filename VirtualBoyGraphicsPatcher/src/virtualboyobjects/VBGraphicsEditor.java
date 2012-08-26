@@ -23,7 +23,6 @@ public class VBGraphicsEditor extends javax.swing.JFrame {
 	private JPanel rightPanel;
 
 	/**
-import java.nio.ByteOrder;
 	 * @param args
 	 * @throws IOException 
 	 */
@@ -31,6 +30,7 @@ import java.nio.ByteOrder;
 		init();	
 		//loadCharacters();
 		loadChar();
+		loadBGMap();
 		this.add(leftScroll, BorderLayout.WEST);
 		this.add(rightScroll, BorderLayout.EAST);
 		this.setVisible(true);
@@ -56,9 +56,22 @@ import java.nio.ByteOrder;
 		//_myRom = new VBRom("/home/greg/VirtualBoy/VBProgrammingDemo/ss.vb");		
 	}
 	
+	private void loadBGMap(){
+		BufferedImage i = _myRom.getBGMap(0, 1);
+		javax.swing.JButton b = new javax.swing.JButton();			
+		b.setBorderPainted(false);
+		b.setBounds(b.getX(), b.getY(), i.getWidth(), i.getHeight());
+		b.setContentAreaFilled(false);
+		b.setIcon(new ImageIcon(i));
+		b.setSize(i.getWidth(), i.getHeight());
+		b.setVisible(true);
+		
+		rightPanel.add(b);
+	}
+	
 	private void loadChar(){
-		for(int c=0; c<512; c++){
-			BufferedImage i = _myRom.getCharacterAt(c, 4);
+		for(int c=0; c<2048; c++){
+			BufferedImage i = _myRom.getCharacter(c, 2);
 			javax.swing.JButton b = new javax.swing.JButton();			
 			b.setBorderPainted(false);
 			b.setBounds(b.getX(), b.getY(), i.getWidth(), i.getHeight());
