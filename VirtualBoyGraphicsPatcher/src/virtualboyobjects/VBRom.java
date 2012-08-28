@@ -10,7 +10,6 @@ public class VBRom {
 	private byte[] allChars = new byte[32768]; //2048chars * 16px
 	private byte[] allBGMaps = new byte[114688]; //14maps * 2bytes per char * 4096chars per map
 	private java.awt.Polygon[] bgMapPolys = new java.awt.Polygon[4096];
-	private boolean _bEndianFlip = true;
 	
 	public VBRom(String path){
 		_path = path;
@@ -44,8 +43,7 @@ public class VBRom {
 		//6000 - 7FFF = 0-511
 		//E000 - FFFF = 512-1023
 		//16000 - 17FFF = 1024 - 1535
-		//1E000 = 1FFFF = 1536 - 2047
-		//Switch word bytes around for little endian to big endian conversion				
+		//1E000 = 1FFFF = 1536 - 2047				
 		int iLength = 0x1FFF;
 		//Segment 1
 		for(int i=0; i<= iLength; i++){
@@ -66,11 +64,27 @@ public class VBRom {
 	}
 	
 	private void getAllBGMaps(){
-		//0x0002 0000 - 0x0003 C000 memory area for BGMaps		
+		//0x00020000 - 0x0003C000 memory area for BGMaps		
 		int iLength = (0x3C000-0x20000);
 		for(int i=0x0; i<iLength; i++){
 			allBGMaps[i] = _rom.get(0x20000+i);
 		}
+	}
+	
+	public java.awt.Polygon[] getPolygons(){
+		return this.bgMapPolys;
+	}
+	
+	public void alterBGCell(int bgMapNumber, int cellNumber, int charNumber){
+		int iBGMapLength = 8192;
+		int idx = cellNumber*2;
+		byte b1 = (byte)(charNumber & 0xFF);
+		byte b2 = (byte)(charNumber >> 8 & 0xFF);
+		
+		System.out.print(charNumber + " b1: " + Integer.toHexString((int)b1) + " b2: " + Integer.toHexString((int)b2) + "\n");
+		
+		allBGMaps[(bgMapNumber*iBGMapLength) + idx] = (byte)b1;
+		allBGMaps[(bgMapNumber*iBGMapLength) + idx + 1] = (byte)b2;
 	}
 	
 	public java.awt.image.BufferedImage getBGMap(int bgMapNumber,int scale){
@@ -100,7 +114,7 @@ public class VBRom {
 				short b2 = (short)(bgMap[m+1] & 0xFF);
 				cell = ((b2 << 8) + b1) & 0x7FF;
 				
-				java.awt.image.BufferedImage bi = getCharacter(cell,1);
+				java.awt.image.BufferedImage bi = getCharacter(cell,scale);
 				for(int x=0; x<bi.getWidth();x++){
 					for(int y=0; y<bi.getHeight();y++){
 						i.setRGB(mainX+x, mainY+y, bi.getRGB(x, y));
