@@ -6,25 +6,46 @@ import java.nio.ByteBuffer;
 public class VBRom {
 	
 	private ByteBuffer _rom; //8bit characters
-	private String _path;
+	private ByteBuffer _ram;
+	private String rom_path;
+	private String ram_path;
+	private byte[] compressedData = new byte[114688];
+	private int compressedDataLength = 0;
 	private byte[] allChars = new byte[32768]; //2048chars * 16px
 	private byte[] allBGMaps = new byte[114688]; //14maps * 2bytes per char * 4096chars per map
 	private java.awt.Polygon[] bgMapPolys = new java.awt.Polygon[4096];
 	
-	public VBRom(String path){
-		_path = path;
+	public VBRom(String rompath, String rampath){
+		rom_path = rompath;
+		ram_path = rampath;
 		LoadRomToMemory();
+		LoadRamToMemory();
 		getAllCharacters();
 		getAllBGMaps();
 	}
 	
 	private void LoadRomToMemory(){
-		java.io.File f = new java.io.File(_path);
+		java.io.File f = new java.io.File(rom_path);
 		_rom = ByteBuffer.allocate((int)f.length());
 		try {
-			java.io.DataInputStream file = new java.io.DataInputStream(new java.io.FileInputStream(_path));
+			java.io.DataInputStream file = new java.io.DataInputStream(new java.io.FileInputStream(rom_path));
 			for(int b=0; b<(int)f.length(); b++){
 				_rom.put(file.readByte());
+			}
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			System.out.print(e.toString());
+		}
+	}
+	
+	private void LoadRamToMemory(){
+		java.io.File f = new java.io.File(ram_path);
+		_ram = ByteBuffer.allocate((int)f.length());
+		try {
+			java.io.DataInputStream file = new java.io.DataInputStream(new java.io.FileInputStream(ram_path));
+			for(int b=0; b<(int)f.length(); b++){
+				_ram.put(file.readByte());
 			}
 			
 		} catch (Exception e) {
@@ -37,6 +58,58 @@ public class VBRom {
 		return _rom;
 	}
 	
+	public ByteBuffer getRamByteBuffer(){
+		return _ram;
+	}
+	
+	public void DeCompressData(){
+		if(compressedDataLength == 0) return;
+		int currPos = 0; //Current byte in the compressed data
+		int bitMask = 0; //Bitmask used for compression
+		int currByte = 0; //Current byte in BGMap area we are writing to.
+		int readPointer = 0;
+		int loopCount = 0;
+		int b1 = 0;
+		int b2 = 0;
+		//Read the bit mask. If bit is 0 read a byte If bit is 1 read a word
+		//First byte is always a bit mask
+		while (currPos < compressedDataLength){
+			bitMask = (int)compressedData[currPos++] & 0xFF;
+			for(int b=128; b>0; b>>=1){
+				if ((b & bitMask) == 0){
+					allBGMaps[currByte] = compressedData[currPos];
+					currByte++;
+					currPos++;
+				}else {
+					//For a word we have some work to do.
+					//The least significant nibble is the number times we will copy
+					//a previous byte. The rest of the bytes tell us how far back to go from the
+					//current position to grab the bytes we are going to copy
+					b1 = (int)compressedData[currPos] & 0xFF;
+					b2 = (int)compressedData[++currPos] & 0xFF;
+					loopCount = (b1 & 0xF) + 2; //Minimum of 3 words are copied
+					readPointer = (((b2 << 8) + b1) >> 4) + 1;//Bytes are shifted right over loop count
+					
+					for(int i=0; i<loopCount; i++){
+						b1 = (int)allBGMaps[currByte - readPointer] & 0xFF;
+						allBGMaps[currByte] = (byte)b1;
+						currByte++;
+					}
+					
+					currPos++;
+					currByte++;
+				}
+			}
+		}
+	}
+	
+	public void LoadCompressedData(int startByte, int endByte){
+		compressedDataLength = endByte - startByte + 1;
+		for(int i=0; i<compressedDataLength; i++){
+			compressedData[i] = _rom.get(startByte + i);
+		}
+	}
+	
 	private void getAllCharacters(){
 		//Return all the character bytes for the addresses of
 		//Rom starts ad 0700000
@@ -47,19 +120,19 @@ public class VBRom {
 		int iLength = 0x1FFF;
 		//Segment 1
 		for(int i=0; i<= iLength; i++){
-			allChars[i] = _rom.get(0x6000+i);
+			allChars[i] = _ram.get(0x6000+i);
 		}
 		//Segment 2
 		for(int i=0; i<= iLength; i++){
-			allChars[i+iLength+1] = _rom.get(0xE000+i);
+			allChars[i+iLength+1] = _ram.get(0xE000+i);
 		}
 		//Segment 3
 		for(int i=0; i<= iLength; i++){
-			allChars[i+((iLength+1)*2)] = _rom.get(0x16000+i);
+			allChars[i+((iLength+1)*2)] = _ram.get(0x16000+i);
 		}
 		//Segment 4
 		for(int i=0; i<= iLength; i++){
-			allChars[i+((iLength+1)*3)] = _rom.get(0x1E000+i);
+			allChars[i+((iLength+1)*3)] = _ram.get(0x1E000+i);
 		}
 	}
 	
@@ -67,7 +140,7 @@ public class VBRom {
 		//0x00020000 - 0x0003C000 memory area for BGMaps		
 		int iLength = (0x3C000-0x20000);
 		for(int i=0x0; i<iLength; i++){
-			allBGMaps[i] = _rom.get(0x20000+i);
+			allBGMaps[i] = _ram.get(0x20000+i);
 		}
 	}
 	

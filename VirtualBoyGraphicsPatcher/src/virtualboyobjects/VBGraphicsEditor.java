@@ -33,8 +33,9 @@ public class VBGraphicsEditor extends javax.swing.JFrame implements java.awt.eve
 	public VBGraphicsEditor(){
 		init();	
 		//loadCharacters();
-		loadChar();
-		loadBGMap();
+		//loadChar();
+		//loadBGMap();
+		loadBGMapCompressed();
 		this.add(leftScroll, BorderLayout.WEST);
 		this.add(rightScroll, BorderLayout.EAST);
 		this.setVisible(true);
@@ -56,7 +57,16 @@ public class VBGraphicsEditor extends javax.swing.JFrame implements java.awt.eve
 		rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
 		rightScroll = new JScrollPane(rightPanel);
 		rightScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-		_myRom = new VBRom("/home/greg/VirtualBoy/RealityBoy/ram_vip.bin");
+		_myRom = new VBRom("/home/greg/VirtualBoy/RealityBoy/ss.vb",
+				"/home/greg/VirtualBoy/RealityBoy/ram_vip.bin");
+		//_myRom = new VBRom("/home/greg/VirtualBoy/RealityBoy/ram_vip.bin");
+	}
+	
+	private void loadBGMapCompressed(){
+		_myRom.LoadCompressedData(0x417b8, 0x41c31);
+		_myRom.DeCompressData();
+		loadChar();
+		loadBGMap();
 	}
 	
 	private void loadBGMap(){
