@@ -32,6 +32,7 @@ public class VBRom {
 			for(int b=0; b<(int)f.length(); b++){
 				_rom.put(file.readByte());
 			}
+			file.close();
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -47,6 +48,7 @@ public class VBRom {
 			for(int b=0; b<(int)f.length(); b++){
 				_ram.put(file.readByte());
 			}
+			file.close();
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
